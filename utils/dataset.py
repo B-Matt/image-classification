@@ -1,9 +1,10 @@
 import os
 import cv2
 import enum
-import torch
 import string
 import pathlib
+
+import numpy as np
 
 from pathlib import Path
 from typing import List
@@ -22,7 +23,7 @@ class DatasetType(enum.Enum):
     VALIDATION = 'validation_dataset'
     TEST = 'test_dataset'
 
-
+# TODO: Napraviti skriptu (ne kao Petar) koja će provjeriti sadrži li maska bijeli piksel i staviti joj label
 class ImageDataset(Dataset):
     def __init__(
         self,
@@ -48,12 +49,16 @@ class ImageDataset(Dataset):
         with open(path, mode='r', encoding='utf-8') as file:
             for i, line in enumerate(file):
                 path = pathlib.Path(data_dir, img_dir, line.strip())
+                mask = cv2.imread(pathlib.Path(path, 'Mask'))[:, :, ::-1]
+                print(np.unique(mask))
+
                 data_info = image_info(
                     line.strip(),
                     pathlib.Path(path, 'Image'),
                     1
                 )
                 dataset_files.append(data_info)
+                break
         return dataset_files
 
     def __len__(self):
@@ -66,8 +71,9 @@ class ImageDataset(Dataset):
 
         if self.transform is not None:
             temp_img = self.transform(image=img)['image']
+            temp_img /= 255.0
 
         return {
-            'image': torch.as_tensor(temp_img).float(),
+            'image': temp_img,
             'label': img_data.label
         }
