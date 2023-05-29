@@ -136,6 +136,7 @@ dmypy.json
 *.avi
 *.exe
 data/*
+checkpoints/
 wandb/*
 metrics_output/
 saved_predictions/

@@ -13,7 +13,7 @@ from torch.utils.data import Dataset
 
 
 image_info = namedtuple(
-    'data_info_tuple',
+    'image_info',
     'name, image, label'
 )
 
@@ -23,7 +23,7 @@ class DatasetType(enum.Enum):
     VALIDATION = 'validation_dataset'
     TEST = 'test_dataset'
 
-# TODO: Napraviti skriptu (ne kao Petar) koja će provjeriti sadrži li maska bijeli piksel i staviti joj label
+
 class ImageDataset(Dataset):
     def __init__(
         self,
@@ -37,29 +37,27 @@ class ImageDataset(Dataset):
         self.transform = transform
         self.images_data = self.preload_image_data(data_dir, img_dir, type)
 
-    def preload_image_data_dir(
+    def preload_image_data(
         self,
         data_dir: string,
         img_dir: string,
         type: DatasetType
     ):
-        dataset_files: List = []
+        data_infos: List = []
         path = pathlib.Path(data_dir, f'{type.value}.txt')
 
         with open(path, mode='r', encoding='utf-8') as file:
             for i, line in enumerate(file):
                 path = pathlib.Path(data_dir, img_dir, line.strip())
-                mask = cv2.imread(pathlib.Path(path, 'Mask'))[:, :, ::-1]
-                print(np.unique(mask))
-
-                data_info = image_info(
-                    line.strip(),
-                    pathlib.Path(path, 'Image'),
-                    1
+                label = 1 if 'fire-' in line.strip() else 0
+                data_infos.append(
+                    image_info(
+                        line.strip(),
+                        pathlib.Path(path, 'Image'),
+                        label
+                    )
                 )
-                dataset_files.append(data_info)
-                break
-        return dataset_files
+        return data_infos
 
     def __len__(self):
         return len(self.images_data)
@@ -71,9 +69,6 @@ class ImageDataset(Dataset):
 
         if self.transform is not None:
             temp_img = self.transform(image=img)['image']
-            temp_img /= 255.0
+            temp_img = temp_img / 255
 
-        return {
-            'image': temp_img,
-            'label': img_data.label
-        }
+        return temp_img, img_data.label
